@@ -1,0 +1,58 @@
+#include <stdio.h>
+#include <string.h>
+
+#define MAX_PATIENTS 100
+
+struct Date {
+    int day, month, year;
+};
+
+struct BloodPressure {
+    int systolic, diastolic;
+};
+
+struct Patient {
+    char name[50];
+    int age;
+    char phone[11];
+    struct BloodPressure bp;
+    struct Date visit;
+};
+
+void add_patient(struct Patient *p, const char *name, int age,
+                 const char *phone, int sys, int dia,
+                 struct Date visit)
+{
+    snprintf(p->name, sizeof p->name, "%s", name);
+    p->age = age;
+    snprintf(p->phone, sizeof p->phone, "%s", phone);
+    p->bp.systolic = sys;
+    p->bp.diastolic = dia;
+    p->visit = visit;
+}
+
+int main(void)
+{
+    struct Patient patients[MAX_PATIENTS];
+    int count = 0;
+    struct Date d = {19, 11, 2026};
+
+    if (count < MAX_PATIENTS) {
+        add_patient(&patients[count], "Anu", 25,
+                    "9876543210", 120, 80, d);
+        count++;
+    }
+
+    for (int i = 0; i < count; i++) {
+        printf("%s %d %s BP %d/%d Date %02d/%02d/%04d\n",
+               patients[i].name, patients[i].age,
+               patients[i].phone,
+               patients[i].bp.systolic,
+               patients[i].bp.diastolic,
+               patients[i].visit.day,
+               patients[i].visit.month,
+               patients[i].visit.year);
+    }
+
+    return 0;
+}
