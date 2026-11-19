@@ -1,0 +1,190 @@
+#include <stdio.h>
+
+#define N 4
+#define SALES 20
+
+struct Date {
+    int day, month, year;
+};
+
+enum ItemType {
+    PACKAGED, COOKED, COMBO
+};
+
+struct Item {
+    int id;
+    char name[20];
+    enum ItemType type;
+    float price;
+    int stock;
+
+    union {
+        struct Date expiry;
+        char prepared[6];
+
+        struct {
+            int id[3], qty[3], count;
+        } combo;
+
+    } detail;
+};
+
+struct Sale {
+    int id, qty;
+    float revenue;
+};
+
+int days(struct Date d)
+{
+    return d.year * 365 + d.month * 30 + d.day;
+}
+
+int find_item(struct Item items[], int n, int id)
+{
+    for (int i = 0; i < n; i++)
+        if (items[i].id == id)
+            return i;
+
+    return -1;
+}
+
+int sell(struct Item items[], int n, int id, int qty,
+         struct Sale sales[], int *sale_count)
+{
+    int k = find_item(items, n, id);
+
+    if (k < 0 || qty <= 0)
+        return 0;
+
+    if (items[k].type == COMBO) {
+
+        int c;
+
+        for (c = 0; c < items[k].detail.combo.count; c++) {
+
+            int x = find_item(items, n,
+                              items[k].detail.combo.id[c]);
+
+            if (x < 0 || items[x].stock <
+                items[k].detail.combo.qty[c] * qty)
+                return 0;
+        }
+
+        for (c = 0; c < items[k].detail.combo.count; c++) {
+
+            int x = find_item(items, n,
+                              items[k].detail.combo.id[c]);
+
+            items[x].stock -=
+                items[k].detail.combo.qty[c] * qty;
+        }
+
+    } else {
+
+        if (items[k].stock < qty)
+            return 0;
+
+        items[k].stock -= qty;
+    }
+
+    if (*sale_count < SALES) {
+
+        sales[*sale_count].id = id;
+        sales[*sale_count].qty = qty;
+
+        sales[*sale_count].revenue =
+            items[k].price * qty;
+
+        (*sale_count)++;
+    }
+
+    return 1;
+}
+
+void expiry_warning(struct Item items[], int n,
+                    struct Date today)
+{
+    for (int i = 0; i < n; i++) {
+
+        if (items[i].type == PACKAGED) {
+
+            int left = days(items[i].detail.expiry)
+                       - days(today);
+
+            if (left >= 0 && left <= 2) {
+
+                printf("Warning: %s expires in %d day(s)\n",
+                       items[i].name, left);
+            }
+        }
+    }
+}
+
+void sort_sales(struct Sale s[], int n)
+{
+    for (int i = 0; i < n - 1; i++) {
+
+        for (int j = i + 1; j < n; j++) {
+
+            if (s[j].revenue > s[i].revenue) {
+
+                struct Sale t = s[i];
+                s[i] = s[j];
+                s[j] = t;
+            }
+        }
+    }
+}
+
+int main(void)
+{
+    struct Item items[N] = {
+
+        {1, "Juice", PACKAGED, 30, 10,
+         {.expiry = {21, 11, 2026}}},
+
+        {2, "Sandwich", COOKED, 50, 5,
+         {.prepared = "09:30"}},
+
+        {3, "Water", PACKAGED, 20, 2,
+         {.expiry = {20, 11, 2026}}},
+
+        {4, "Combo", COMBO, 70, 0,
+         {.combo = {{1, 2, 0}, {1, 1, 0}, 2}}
+        }
+    };
+
+    struct Sale sales[SALES];
+
+    int count = 0;
+
+    struct Date today = {19, 11, 2026};
+
+    printf("Normal sale: %s\n",
+           sell(items, N, 1, 2, sales, &count)
+           ? "Success" : "Failed");
+
+    printf("Insufficient stock test: %s\n",
+           sell(items, N, 3, 5, sales, &count)
+           ? "Success" : "Rejected");
+
+    printf("Combo sale: %s\n",
+           sell(items, N, 4, 1, sales, &count)
+           ? "Success" : "Rejected");
+
+    expiry_warning(items, N, today);
+
+    sort_sales(sales, count);
+
+    puts("Revenue summary:");
+
+    for (int i = 0; i < count; i++) {
+
+        printf("Item %d Qty %d Revenue %.2f\n",
+               sales[i].id,
+               sales[i].qty,
+               sales[i].revenue);
+    }
+
+    return 0;
+}
