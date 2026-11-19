@@ -1,0 +1,82 @@
+#include <stdio.h>
+
+struct date {
+    int day, month, year;
+};
+
+struct address {
+    char city[20];
+    int pincode;
+};
+
+struct person {
+    char name[30];
+    struct address address;
+};
+
+enum service {
+    NORMAL, EXPRESS
+};
+
+struct parcel {
+    int id;
+    float weight;
+    struct person sender, receiver;
+    struct date booked;
+    enum service type;
+    float charge;
+};
+
+void print_parcel(const struct parcel *p)
+{
+    printf("%d %.1f kg %s-%d %02d/%02d/%04d\n",
+           p->id, p->weight,
+           p->receiver.address.city,
+           p->receiver.address.pincode,
+           p->booked.day,
+           p->booked.month,
+           p->booked.year);
+}
+
+void sort_by_weight(struct parcel p[], int n)
+{
+    for (int i = 0; i < n - 1; i++) {
+        int min = i;
+
+        for (int j = i + 1; j < n; j++) {
+            if (p[j].weight < p[min].weight)
+                min = j;
+        }
+
+        if (min != i) {
+            struct parcel temp = p[i];
+            p[i] = p[min];
+            p[min] = temp;
+        }
+    }
+}
+
+int main(void)
+{
+    struct parcel list[3] = {
+        {501, 4.5f, {"Ravi", {"Chennai", 600001}},
+         {"Asha", {"Madurai", 625001}},
+         {12, 10, 2026}, NORMAL, 80},
+
+        {502, 1.2f, {"Bala", {"Chennai", 600002}},
+         {"Devi", {"Chennai", 600077}},
+         {12, 10, 2026}, EXPRESS, 120},
+
+        {503, 2.8f, {"Kumar", {"Salem", 636001}},
+         {"Mala", {"Coimbatore", 641001}},
+         {13, 10, 2026}, NORMAL, 90}
+    };
+
+    sort_by_weight(list, 3);
+
+    for (int i = 0; i < 3; i++) {
+        print_parcel(&list[i]);
+    }
+
+    return 0;
+}
